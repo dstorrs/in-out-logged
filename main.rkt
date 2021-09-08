@@ -21,8 +21,9 @@
                               data ...))
          (begin0
              (let () code ...)
-           (log-message (~? logger (current-logger)) (~? level 'debug)
-                        (format "leaving ~a" name))))]
+         (log-message (~? logger (current-logger)) (~? level 'debug)
+                      (format (format "leaving ~a. ~a" name format-str)
+                              data ...))))]
 
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level)))
@@ -41,8 +42,12 @@
                                   "")))
          (begin0
              (let () code ...)
-           (log-message (~? logger (current-logger)) (~? level 'debug)
-                        (format "leaving ~a" name))))]))
+         (log-message (~? logger (current-logger)) (~? level 'debug)
+                      (format "leaving ~a~a"
+                              name
+                              (if (non-empty-string? data-str)
+                                  (format ". args:\n~a" data-str)
+                                  "")))))]))
 
 (module+ main
   (define-logger foo)
@@ -79,18 +84,24 @@ sent to foo-logger, and we include arguments to be displayed
 in the 'entering' message")
   
   (displayln "\ndefault format style")
-  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger 'a 1 'b 2 'c 3)
+  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger "time" (current-seconds))
                  (on-complete + 1 2 3))
 
   (displayln "\nsame as above, reversed order of keywords")
-  (in/out-logged ("on-complete"  #:to foo-logger #:at 'debug  'a 1 'b 2 'c 3)
-                 (on-complete + 1 2 3))
+  (in/out-logged ("on-complete"
+                  #:to foo-logger
+                  #:at 'debug
+                  "time" (current-inexact-milliseconds))
+                 (on-complete + 1 2 5))
 
   (displayln "\nusing bar-logger, using a specified format string")
-  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "data is: ~a ~a" 'a 1)
+  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "time is: ~a, username is: ~a." (current-seconds) 'bob)
                  (on-complete + 1 2 3))
 
   (displayln "\n\nTesting multiple value return")
 
-  (in/out-logged ("multiple-return" #:to bar-logger) (values 1 2))
+  (in/out-logged ("values"
+                  #:at 'error
+                  #:with "time is: ~a, username is: ~a." (current-inexact-milliseconds) 'bob)
+                 (values 1 2))
   )
