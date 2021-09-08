@@ -19,10 +19,10 @@
          (log-message (~? logger (current-logger)) (~? level 'debug)
                       (format (format "entering ~a. ~a" name format-str)
                               data ...))
-         (define result (let () code ...))
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format "leaving ~a" name))
-         result)]
+         (begin0
+             (let () code ...)
+           (log-message (~? logger (current-logger)) (~? level 'debug)
+                        (format "leaving ~a" name))))]
 
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level)))
@@ -39,10 +39,10 @@
                               (if (non-empty-string? data-str)
                                   (format ". args:\n~a" data-str)
                                   "")))
-         (define result (let () code ...))
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format "leaving ~a" name))
-         result)]))
+         (begin0
+             (let () code ...)
+           (log-message (~? logger (current-logger)) (~? level 'debug)
+                        (format "leaving ~a" name))))]))
 
 (module+ main
   (define-logger foo)
@@ -89,4 +89,8 @@ in the 'entering' message")
   (displayln "\nusing bar-logger, using a specified format string")
   (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "data is: ~a ~a" 'a 1)
                  (on-complete + 1 2 3))
+
+  (displayln "\n\nTesting multiple value return")
+
+  (in/out-logged ("multiple-return" #:to bar-logger) (values 1 2))
   )

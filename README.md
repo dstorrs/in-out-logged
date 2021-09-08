@@ -46,6 +46,9 @@ parameterize foo-logger into current-logger.\n")
   (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "data is: ~a ~a" 'a 1)
                  (on-complete + 1 2 3))
   
+  (displayln "\n\nTesting multiple value return")
+
+  (in/out-logged ("multiple-return" #:to bar-logger) (values 1 2))
   
 ```
 
@@ -113,4 +116,11 @@ bar: entering on-complete. data is: a 1
 foo: in on-complete
 bar: leaving on-complete
 6
+
+
+Testing multiple value return
+bar: entering multiple-return
+bar: leaving multiple-return
+1
+2
 ```

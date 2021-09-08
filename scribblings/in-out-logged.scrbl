@@ -70,8 +70,11 @@ in the 'entering' message")
 
   (displayln "\nusing bar-logger, using a specified format string")
   (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "data is: ~a ~a" 'a 1)
-                 (on-complete + 1 2 3))
+  (on-complete + 1 2 3))
 
+  (displayln "\n\nTesting multiple value return")
+
+  (in/out-logged ("multiple-return" #:to bar-logger) (values 1 2))
 ]
 
 ...generates this output:
@@ -144,4 +147,9 @@ foo: in on-complete
 bar: leaving on-complete
 6
 
+Testing multiple value return
+bar: entering multiple-return
+bar: leaving multiple-return
+1
+2
 ]
