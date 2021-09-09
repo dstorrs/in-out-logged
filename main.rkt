@@ -32,7 +32,7 @@
         code:expr ...)
      #'(let ([data-str (string-join (for/list ([k (list data.k ...)]
                                                [v (list data.v ...)])
-                                      (format "~a  ~a" k v))
+                                      (format "\t~a  ~a" k v))
                                     "\n")])
          (log-message (~? logger (current-logger)) (~? level 'debug)
                       (format "entering ~a~a"
