@@ -40,7 +40,7 @@
                                 (string-join
                                  (for/list ([k keys]
                                             [v vals])
-                                   (format "\t~a" (~a (~a k #:width width) v #:separator "\t")))
+                                   (~a #:separator "\t" "" (~a k #:width width) v))
                                  "\n")]))])
          (log-message (~? logger (current-logger)) (~? level 'debug)
                       (format "entering ~a~a"
