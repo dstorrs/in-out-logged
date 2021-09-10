@@ -6,27 +6,46 @@
 
 @defmodule[in-out-logged]
 
-Run a chunk of code with log messages around it to announce when it begins and when it ends.  Return the result of the code.
+@section{DESCRIPTION}
+
+Macro:  in/out-logged
+
+Wraps a chunk of code such that log messages are output when the code begins and ends.
+
+Returns the result of the code.  
+
+in/out-logged can be given a series of arguments that are key/value pairs.  These will be
+displayed in the 'in' and 'out messages.  A good use case for this is to output the
+current-inexact-nanoseconds to get a rough approximation of how long the code takes when
+you don't want to do a full profiler run.
+
+Instead of providing key/value pairs you can use the #:with keyword to provide a format
+string and a series of values to format into it.
 
 @section{SYNOPSIS}
 
-Keyword arguments are all optional.  #:to and #:at may appear in either order
-but #:with must come last if it is present.
+@racketblock[
+ (in/out-logged (#:to <logger-name> #:at <logger-level> <key/value pair> ...)
+   code ...)
+   
+ (in/out-logged (#:to <logger-name> #:at <logger-level> #:with <format-str> <value> ...)
+   code ...)
+	      ]
+	      
+All keywords are optional but #:with must be last if it appears.
+
+By default output is sent to (current-logger) at 'debug level.
+
+Valid levels are as per the Racket logging system.  In decreasing order of importance:
 
 @racketblock[
-(in/out-logged ("name of code for reporting purposes") code ...)
-(in/out-logged ("name" #:to foo-logger) code ...)
-(in/out-logged ("name" #:to foo-logger #:at 'info) code ...)
-(in/out-logged ("name" #:to foo-logger #:at 'info 'arg1 'arg2 ...) code ...)
-(in/out-logged ("name" #:to foo-logger #:at 'info #:with "args are: ~a ~a" 'arg1 'arg2) code ...)
+  'fatal, 'error, 'warning, 'info, and 'debug.
 ]
 
-@section{DETAILS}
-
-This code:
+@section{EXAMPLES}
 
 @racketblock[
-
+(module+ main
   (define-logger foo)
   (define-logger bar)
 
@@ -44,10 +63,10 @@ level (i.e. 'debug)\n")
   (displayln "\non-complete function")
   (in/out-logged ("on-complete") (on-complete + 1 2 3))
 
-  (displayln "\n\nFor the following tests, we call (on-complete) and output
-is explicitly sent to foo-logger.  Obviously you could instead
+  (displayln "\n\nFor the following tests, we call (on-complete) and output is
+explicitly sent to foo-logger.  Obviously you could instead
 parameterize foo-logger into current-logger.\n")
-  
+
   (in/out-logged ("on-complete" #:to foo-logger) (on-complete + 1 2 3))
 
   (displayln "\n#:at 'info level")
@@ -59,35 +78,42 @@ parameterize foo-logger into current-logger.\n")
   (displayln "\n\nFor the following tests, we call (on-complete), output is explicitly
 sent to foo-logger, and we include arguments to be displayed
 in the 'entering' message")
-  
+
   (displayln "\ndefault format style")
-  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger 'a 1 'b 2 'c 3)
+  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger
+                  "time" (current-seconds)
+                  "thread-id" 17)
                  (on-complete + 1 2 3))
 
   (displayln "\nsame as above, reversed order of keywords")
-  (in/out-logged ("on-complete"  #:to foo-logger #:at 'debug  'a 1 'b 2 'c 3)
-                 (on-complete + 1 2 3))
+  (in/out-logged ("on-complete"
+                  #:to foo-logger
+                  #:at 'debug
+                  "time" (current-inexact-milliseconds))
+                 (on-complete + 1 2 5))
 
   (displayln "\nusing bar-logger, using a specified format string")
-  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "data is: ~a ~a" 'a 1)
-  (on-complete + 1 2 3))
+  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "time is: ~a, username is: ~a." (current-seconds) 'bob)
+                 (on-complete + 1 2 3))
 
   (displayln "\n\nTesting multiple value return")
 
-  (in/out-logged ("multiple-return" #:to bar-logger) (values 1 2))
+  (in/out-logged ("values"
+                  #:at 'error
+                  #:with "time is: ~a, username is: ~a." (current-inexact-milliseconds) 'bob)
+                 (values 1 2))
+		 )
 ]
 
-...generates this output:
+When run as follows:
+
+  @racketblock[PLTSTDERR="debug@foo debug@bar error" racket main.rkt]
+
+This outputs:
 
 @racketblock[
-
-$ PLTSTDERR="debug@foo debug@bar error" racket main.rkt
-
 For the following tests, output is sent to (current-logger) at default
-level (i.e. 'debug) [NOTE for this README file:  We have set the 
-default reporting	level to 'error' so no in/out logs will be shown but 
-the logs	inside the on-complete function will be since they are sent 
-to foo-logger.]
+level (i.e. 'debug)
 
 return literal
 'ok
@@ -97,8 +123,8 @@ foo: in on-complete
 6
 
 
-For the following tests, we call (on-complete) and output
-is explicitly sent to foo-logger.  Obviously you could instead
+For the following tests, we call (on-complete) and output is
+explicitly sent to foo-logger.  Obviously you could instead
 parameterize foo-logger into current-logger.
 
 foo: entering on-complete
@@ -119,37 +145,38 @@ foo: leaving on-complete
 6
 
 
-For the following tests, we call (on-complete), output is
-explicitly sent to foo-logger, and we include arguments to
-be displayed in the 'entering' message.
+For the following tests, we call (on-complete), output is explicitly
+sent to foo-logger, and we include arguments to be displayed
+in the 'entering' message
 
 default format style
 foo: entering on-complete. args:
-a  1
-b  2
-c  3
+	time     	1631296675
+	thread-id	17
 foo: in on-complete
-foo: leaving on-complete
+foo: leaving on-complete. args:
+	time     	1631296675
+	thread-id	17
 6
 
 same as above, reversed order of keywords
 foo: entering on-complete. args:
-a  1
-b  2
-c  3
+	time	1631296675879.532
 foo: in on-complete
-foo: leaving on-complete
-6
+foo: leaving on-complete. args:
+	time	1631296675879.532
+8
 
 using bar-logger, using a specified format string
-bar: entering on-complete. data is: a 1
+bar: entering on-complete. time is: 1631296675, username is: bob.
 foo: in on-complete
-bar: leaving on-complete
+bar: leaving on-complete. time is: 1631296675, username is: bob.
 6
 
+
 Testing multiple value return
-bar: entering multiple-return
-bar: leaving multiple-return
+entering values. time is: 1631296675905.897, username is: bob.
+leaving values. time is: 1631296675905.909, username is: bob.
 1
 2
 ]
