@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require  racket/string (for-syntax racket/base  syntax/parse))
+(require racket/format  racket/string (for-syntax racket/base  syntax/parse))
 
 
 (provide (all-defined-out))
@@ -21,19 +21,27 @@
                               data ...))
          (begin0
              (let () code ...)
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format (format "leaving ~a. ~a" name format-str)
-                              data ...))))]
+           (log-message (~? logger (current-logger)) (~? level 'debug)
+                        (format (format "leaving ~a. ~a" name format-str)
+                                data ...))))]
 
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level)))
                   ...
                   data:k/v ...)
         code:expr ...)
-     #'(let ([data-str (string-join (for/list ([k (list data.k ...)]
-                                               [v (list data.v ...)])
-                                      (format "\t~a  ~a" k v))
-                                    "\n")])
+     #'(let ([data-str (let* ([keys  (list data.k ...)]
+                              [vals  (list data.v ...)]
+                              [width (if (null? keys)
+                                         0
+                                         (apply max (map string-length keys)))])
+                         (cond [(null? keys) ""]
+                               [else
+                                (string-join
+                                 (for/list ([k keys]
+                                            [v vals])
+                                   (format "\t~a" (~a (~a k #:width width) v #:separator "\t")))
+                                 "\n")]))])
          (log-message (~? logger (current-logger)) (~? level 'debug)
                       (format "entering ~a~a"
                               name
@@ -42,12 +50,12 @@
                                   "")))
          (begin0
              (let () code ...)
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format "leaving ~a~a"
-                              name
-                              (if (non-empty-string? data-str)
-                                  (format ". args:\n~a" data-str)
-                                  "")))))]))
+           (log-message (~? logger (current-logger)) (~? level 'debug)
+                        (format "leaving ~a~a"
+                                name
+                                (if (non-empty-string? data-str)
+                                    (format ". args:\n~a" data-str)
+                                    "")))))]))
 
 (module+ main
   (define-logger foo)
@@ -70,7 +78,7 @@ level (i.e. 'debug)\n")
   (displayln "\n\nFor the following tests, we call (on-complete) and output is
 explicitly sent to foo-logger.  Obviously you could instead
 parameterize foo-logger into current-logger.\n")
-  
+
   (in/out-logged ("on-complete" #:to foo-logger) (on-complete + 1 2 3))
 
   (displayln "\n#:at 'info level")
@@ -82,9 +90,11 @@ parameterize foo-logger into current-logger.\n")
   (displayln "\n\nFor the following tests, we call (on-complete), output is explicitly
 sent to foo-logger, and we include arguments to be displayed
 in the 'entering' message")
-  
+
   (displayln "\ndefault format style")
-  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger "time" (current-seconds))
+  (in/out-logged ("on-complete" #:at 'debug #:to foo-logger
+                  "time" (current-seconds)
+                  "thread-id" 17)
                  (on-complete + 1 2 3))
 
   (displayln "\nsame as above, reversed order of keywords")
