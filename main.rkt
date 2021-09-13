@@ -67,7 +67,7 @@
 
 
   (displayln "For the following tests, output is sent to (current-logger) at default
-level (i.e. 'debug)\n")
+level (i.e. 'debug).  This means you won't see any output unless you're running with, e.g. PLTSTDERR='debug', in which case you'll get debug output from the GC system and other racket internals\n")
 
   (displayln "return literal")
   (in/out-logged ("literal") 'ok)
