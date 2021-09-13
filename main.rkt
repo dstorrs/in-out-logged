@@ -8,22 +8,27 @@
 (define-syntax (in/out-logged stx)
   (define-splicing-syntax-class k/v
     (pattern (~seq k v)))
+
+  (define-splicing-syntax-class non-kw-argument
+    #:description "non-keyword argument. (Did you put #:with somewhere other than last?)"
+    (pattern (~seq (~peek (~not x:keyword)) val)))
+
   (syntax-parse stx
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
-                        (~optional (~seq #:at level))
-                        (~once (~seq #:with format-str:str)))
+                        (~optional (~seq #:at level)))
                   ...
-                  data ...)
+                  (~seq #:with format-str:str)
+                  data:non-kw-argument ...)
         code:expr ...)
      #'(let ()
          (log-message (~? logger (current-logger)) (~? level 'debug)
                       (format (format "entering ~a. ~a" name format-str)
-                              data ...))
+                              data.val ...))
          (begin0
              (let () code ...)
            (log-message (~? logger (current-logger)) (~? level 'debug)
                         (format (format "leaving ~a. ~a" name format-str)
-                                data ...))))]
+                                data.val ...))))]
 
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level)))
@@ -105,7 +110,7 @@ in the 'entering' message")
                  (on-complete + 1 2 5))
 
   (displayln "\nusing bar-logger, using a specified format string")
-  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "time is: ~a, username is: ~a." (current-seconds) 'bob)
+  (in/out-logged ("on-complete"  #:to bar-logger #:at 'debug #:with "time is: ~a, username is: ~a." (current-inexact-milliseconds) 'bob)
                  (on-complete + 1 2 3))
 
   (displayln "\n\nTesting multiple value return")
@@ -113,5 +118,4 @@ in the 'entering' message")
   (in/out-logged ("values"
                   #:at 'error
                   #:with "time is: ~a, username is: ~a." (current-inexact-milliseconds) 'bob)
-                 (values 1 2))
-  )
+                 (values 1 2)))
