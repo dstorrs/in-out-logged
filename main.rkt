@@ -7,10 +7,7 @@
          (for-syntax racket/base syntax/parse)
          )
 
-(define-logger test)
-(define-logger foo)
-(log-test-debug "ok")
-
+(provide (all-defined-out))
 
 (define-syntax (in/out-logged stx)
   (define-splicing-syntax-class non-kw-argument
