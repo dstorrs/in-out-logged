@@ -1,14 +1,18 @@
 #lang racket/base
 
-(require racket/format  racket/string (for-syntax racket/base  syntax/parse))
+(require racket/format
+         racket/string
+         racket/function
+         racket/sequence
+         (for-syntax racket/base syntax/parse)
+         )
 
+(define-logger test)
+(define-logger foo)
+(log-test-debug "ok")
 
-(provide (all-defined-out))
 
 (define-syntax (in/out-logged stx)
-  (define-splicing-syntax-class k/v
-    (pattern (~seq k v)))
-
   (define-splicing-syntax-class non-kw-argument
     #:description "non-keyword argument. (Did you put #:with somewhere other than last?)"
     (pattern (~seq (~peek (~not x:keyword)) val)))
@@ -17,50 +21,38 @@
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level)))
                   ...
-                  (~seq #:with format-str:str)
+                  (~optional (~seq #:with fstr:str))
                   data:non-kw-argument ...)
         code:expr ...)
-     #'(let ()
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format (format "entering ~a. ~a" name format-str)
-                              data.val ...))
+     #'(let* ([lst  (list data.val ...)]
+              [msg
+               (~a "~a "   ; "entering" or "leaving"
+                   name
+                   (~? (apply (curry format fstr) lst)
+                       (let* ([item lst]
+                              [len  (length lst)])
+                         (cond [(zero? len) ""] ; no arguments
+                               [(odd? len)  (~a " " (apply (curry ~a #:separator " ") lst))]
+                               [(even? len) ; key/value pairs
+                                (let-values ([(keys vals width)
+                                              (for/fold ([keys '()]
+                                                         [vals '()]
+                                                         [width 0])
+                                                        ([v (in-slice 2 lst)])
+                                                (define k (~a (car v)))
+                                                (values (cons k keys)
+                                                        (cons (cadr v) vals)
+                                                        (max width (string-length k))))])
+                                  (string-join
+                                   (cons ""
+                                         (for/list ([k (reverse keys)]
+                                                    [v (reverse vals)])
+                                           (~a #:separator "\t" "" (~a k #:width width) v)))
+                                   "\n"))]))))])
+         (log-message (~? logger (current-logger)) (~? level 'debug) (format msg "entering"))
          (begin0
              (let () code ...)
-           (log-message (~? logger (current-logger)) (~? level 'debug)
-                        (format (format "leaving ~a. ~a" name format-str)
-                                data.val ...))))]
-
-    [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
-                        (~optional (~seq #:at level)))
-                  ...
-                  data:k/v ...)
-        code:expr ...)
-     #'(let ([data-str (let* ([keys  (list data.k ...)]
-                              [vals  (list data.v ...)]
-                              [width (if (null? keys)
-                                         0
-                                         (apply max (map string-length keys)))])
-                         (cond [(null? keys) ""]
-                               [else
-                                (string-join
-                                 (for/list ([k keys]
-                                            [v vals])
-                                   (~a #:separator "\t" "" (~a k #:width width) v))
-                                 "\n")]))])
-         (log-message (~? logger (current-logger)) (~? level 'debug)
-                      (format "entering ~a~a"
-                              name
-                              (if (non-empty-string? data-str)
-                                  (format ". args:\n~a" data-str)
-                                  "")))
-         (begin0
-             (let () code ...)
-           (log-message (~? logger (current-logger)) (~? level 'debug)
-                        (format "leaving ~a~a"
-                                name
-                                (if (non-empty-string? data-str)
-                                    (format ". args:\n~a" data-str)
-                                    "")))))]))
+           (log-message (~? logger (current-logger)) (~? level 'debug) (format msg "leaving"))))]))
 
 (module+ main
   (define-logger foo)
