@@ -8,19 +8,19 @@
 
 @section{DESCRIPTION}
 
-Macro:  in/out-logged
+Macro:  @racket[in/out-logged]
 
 Wraps a chunk of code such that log messages are output when the code begins and ends.
 
 Returns the result of the code.  
 
-in/out-logged can be given a series of arguments that are key/value pairs.  These will be
-displayed in the 'in' and 'out messages.  A good use case for this is to output the
-current-inexact-nanoseconds to get a rough approximation of how long the code takes when
-you don't want to do a full profiler run.
+@racket[in/out-logged] can be given a series of arguments that are key/value pairs.  These
+will be displayed in the `in' and `out messages.  A good use case for this is to output
+the @racket[current-inexact-nanoseconds] to get a rough approximation of how long the code
+takes when you don't want to do a full profiler run.
 
-Instead of providing key/value pairs you can use the #:with keyword to provide a format
-string and a series of values to format into it.
+Instead of providing key/value pairs you can use the @racket[#:with] keyword to provide a
+format string and a series of values to format into it.
 
 @section{SYNOPSIS}
 
@@ -32,14 +32,14 @@ string and a series of values to format into it.
    code ...)
 	      ]
 	      
-All keywords are optional but #:with must be last if it appears.
+All keywords are optional but @racket[#:with] must be last if it appears.
 
-By default output is sent to (current-logger) at 'debug level.
+By default output is sent to @racket[(current-logger)] at @racket['debug] level.
 
 Valid levels are as per the Racket logging system.  In decreasing order of importance:
 
 @racketblock[
-  'fatal, 'error, 'warning, 'info, and 'debug.
+  'fatal 'error 'warning 'info 'debug
 ]
 
 @section{EXAMPLES}
