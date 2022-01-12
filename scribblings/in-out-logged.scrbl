@@ -152,5 +152,20 @@ foo: leaving values and show multiple returns. results: (values 1 2)
 foo: entering values and show one return.
 foo: leaving values and show one return. results: (values 'ok)
 
+ (code: comment "results and arguments")
+ > (in/out-logged ("on-complete with arguments"
+                #:to foo-logger
+                #:at 'info
+                #:results (result)
+                "time" (current-seconds)
+                "thread-id" 17)
+               (on-complete + 1 2 3))
+foo: entering on-complete with arguments. 
+	time     	1642024707
+	thread-id	17
+foo: message from inside on-complete
+foo: leaving on-complete with arguments.  results: (values 6)
+	time     	1642024707
+	thread-id	17
 
 ]

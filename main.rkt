@@ -23,42 +23,43 @@
                   data:non-kw-argument ...)
         code:expr ...)
      #'(let* ([lst  (list data.val ...)]
-              [msg
-               (~a "~a "   ; "entering" or "leaving"
-                   (format "~a. " name)
-                   (~? (apply (curry format fstr) lst)
-                       (let* ([item lst]
-                              [len  (length lst)])
-                         (cond [(zero? len) ""] ; no arguments
-                               [(odd? len)  (~a " " (apply (curry ~a #:separator " ") lst))]
-                               [(even? len) ; key/value pairs
-                                (let-values ([(keys vals width)
-                                              (for/fold ([keys '()]
-                                                         [vals '()]
-                                                         [width 0])
-                                                        ([v (in-slice 2 lst)])
-                                                (define k (~a (car v)))
-                                                (values (cons k keys)
-                                                        (cons (cadr v) vals)
-                                                        (max width (string-length k))))])
-                                  (string-join
-                                   (cons ""
-                                         (for/list ([k (reverse keys)]
-                                                    [v (reverse vals)])
-                                           (~a #:separator "\t" "" (~a k #:width width) v)))
-                                   "\n"))]))))])
+              [msg  (~a "~a "   ; "entering" or "leaving"
+                        (format "~a. " name))]
+              [arg-str (~? (apply (curry format fstr) lst)
+                           (let* ([item lst]
+                                  [len  (length lst)])
+                             (cond [(zero? len) ""] ; no arguments
+                                   [(odd? len)  (~a " " (apply (curry ~a #:separator " ") lst))]
+                                   [(even? len) ; key/value pairs
+                                    (let-values ([(keys vals width)
+                                                  (for/fold ([keys '()]
+                                                             [vals '()]
+                                                             [width 0])
+                                                            ([v (in-slice 2 lst)])
+                                                    (define k (~a (car v)))
+                                                    (values (cons k keys)
+                                                            (cons (cadr v) vals)
+                                                            (max width (string-length k))))])
+                                      (string-join
+                                       (cons ""
+                                             (for/list ([k (reverse keys)]
+                                                        [v (reverse vals)])
+                                               (~a #:separator "\t" "" (~a k #:width width) v)))
+                                       "\n"))])))]
+              )
          (~? (let ()
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format msg "entering"))
+                            (~a (format msg "entering") arg-str))
                (define-values (r1 result-names ...) (let () code ...))
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format "~a results: (values ~a)"
+                            (format "~a results: (values ~a)~a"
                                     (format msg "leaving")
                                     (string-join
                                      (for/list ([item (list r1 result-names ...)])
-                                       (~v item)))))
+                                       (~v item)))
+                                    arg-str))
                (values r1 result-names ...))
 
 
