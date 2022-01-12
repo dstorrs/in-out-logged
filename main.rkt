@@ -15,16 +15,15 @@
     (pattern (~seq (~peek (~not x:keyword)) val)))
 
   (syntax-parse stx
-    [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
-                        (~optional (~seq #:at level))
-                        (~optional (~seq #:with fstr:str))
-                        (~optional (~seq #:results (r1 result-names ...)))) ; must be 1+ names
-                  ...
-                  data:non-kw-argument ...)
+    [(_ (func-name:str (~alt (~optional (~seq #:to logger:expr))
+                             (~optional (~seq #:at level))
+                             (~optional (~seq #:with fstr:str))
+                             (~optional (~seq #:results (r1 result-names ...)))) ; 1+ names
+                       ...
+                       data:non-kw-argument ...)
         code:expr ...)
      #'(let* ([lst  (list data.val ...)]
-              [msg  (~a "~a "   ; "entering" or "leaving"
-                        (format "~a. " name))]
+              [format-str "~a ~a. ~a~a"] ; entering/leaving, func-name, results, args
               [arg-str (~? (apply (curry format fstr) lst)
                            (let* ([item lst]
                                   [len  (length lst)])
@@ -50,15 +49,19 @@
          (~? (let ()
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (~a (format msg "entering") arg-str))
+                            (format format-str "entering" func-name "" arg-str))
                (define-values (r1 result-names ...) (let () code ...))
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format "~a results: (values ~a)~a"
-                                    (format msg "leaving")
-                                    (string-join
-                                     (for/list ([item (list r1 result-names ...)])
-                                       (~v item)))
+                            (format format-str
+                                    "leaving"
+                                    func-name
+                                    (~?
+                                     (string-join
+                                      (cons "results: "
+                                            (for/list ([item (list r1 result-names ...)])
+                                              (~v item))))
+                                     "")
                                     arg-str))
                (values r1 result-names ...))
 
@@ -67,12 +70,16 @@
              (begin
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format msg "entering"))
+                            (format format-str "entering" func-name "" arg-str))
                (begin0
                    (let () code ...)
                  (log-message (~? logger (current-logger))
                               (~? level 'debug)
-                              (format msg "leaving")))))
+                              (format format-str
+                                      "leaving"
+                                      func-name
+                                      ""
+                                      arg-str)))))
          )]))
 
 (module+ main
