@@ -11,15 +11,15 @@
 
 (define-syntax (in/out-logged stx)
   (define-splicing-syntax-class non-kw-argument
-    #:description "non-keyword argument. (Did you put #:with somewhere other than last?)"
+    #:description "non-keyword argument"
     (pattern (~seq (~peek (~not x:keyword)) val)))
 
   (syntax-parse stx
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
                         (~optional (~seq #:at level))
+                        (~optional (~seq #:with fstr:str))
                         (~optional (~seq #:results (r1 result-names ...)))) ; must be 1+ names
                   ...
-                  (~optional (~seq #:with fstr:str))
                   data:non-kw-argument ...)
         code:expr ...)
      #'(let* ([lst  (list data.val ...)]

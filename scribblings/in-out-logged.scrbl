@@ -15,18 +15,24 @@ Macro:  @racket[in/out-logged]
 
 Wraps a chunk of code such that log messages are output when the code begins and ends.
 
-Returns the result of the code.
+Returns the result(s) of the code.  These results can be shown in the `out'
+message if so desired.
 
-@racket[in/out-logged] can optionally be given a series of key/value pairs.
-These will be displayed in the `in' and `out' messages.  A good use case for
-this is to output the @racket[current-inexact-nanoseconds] to get a rough
-approximation of how long the code takes when you don't want to do a full
-profiler run.
+@racket[in/out-logged] can optionally be given a series of values to be included
+in the `in' and `out' messages.  A good use case for this is to output the
+@racket[current-inexact-nanoseconds] to get a rough approximation of how long
+the code takes when you don't want to do a full profiler run.
 
-Instead of providing key/value pairs you can use the @racket[#:with] keyword to provide a
-format string and a series of values to format into it.
+If there are an even number of arguments then they are understood to be
+key/value pairs and will be arranged as such, meaning "\n\t key <whitespace>
+value", with nice alignment between elements.
 
-You can also have the log messages include the return values of the wrapped code.
+If there are an odd number of arguments then they will be displayed on one line.
+
+If you want control of how they are displayed then you can use the
+@racket[#:with] keyword to provide a format string and a series of values to
+format into it.
+
 
 @section{Synopsis}
 
@@ -52,7 +58,7 @@ You can also have the log messages include the return values of the wrapped code
    code ...)
 ]
 
-All keywords are optional but @racket[#:with] must be last if it appears.
+All keywords are optional.
 
 By default output is sent to @racket[(current-logger)] at @racket['debug] level.
 
