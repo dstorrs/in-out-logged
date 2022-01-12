@@ -16,7 +16,8 @@
 
   (syntax-parse stx
     [(_ (name:str (~alt (~optional (~seq #:to logger:expr))
-                        (~optional (~seq #:at level)))
+                        (~optional (~seq #:at level))
+                        (~optional (~seq #:results (r1 result-names ...)))) ; must be 1+ names
                   ...
                   (~optional (~seq #:with fstr:str))
                   data:non-kw-argument ...)
@@ -24,7 +25,7 @@
      #'(let* ([lst  (list data.val ...)]
               [msg
                (~a "~a "   ; "entering" or "leaving"
-                   name
+                   (format "~a. " name)
                    (~? (apply (curry format fstr) lst)
                        (let* ([item lst]
                               [len  (length lst)])
@@ -46,22 +47,58 @@
                                                     [v (reverse vals)])
                                            (~a #:separator "\t" "" (~a k #:width width) v)))
                                    "\n"))]))))])
-         (log-message (~? logger (current-logger)) (~? level 'debug) (format msg "entering"))
-         (begin0
-             (let () code ...)
-           (log-message (~? logger (current-logger)) (~? level 'debug) (format msg "leaving"))))]))
+         (~? (let ()
+               (log-message (~? logger (current-logger))
+                            (~? level 'debug)
+                            (format msg "entering"))
+               (define-values (r1 result-names ...) (let () code ...))
+               (log-message (~? logger (current-logger))
+                            (~? level 'debug)
+                            (format "~a results: (values ~a)"
+                                    (format msg "leaving")
+                                    (string-join
+                                     (for/list ([item (list r1 result-names ...)])
+                                       (~v item)))))
+               (values r1 result-names ...))
+
+
+
+             (begin
+               (log-message (~? logger (current-logger))
+                            (~? level 'debug)
+                            (format msg "entering"))
+               (begin0
+                   (let () code ...)
+                 (log-message (~? logger (current-logger))
+                              (~? level 'debug)
+                              (format msg "leaving")))))
+         )]))
 
 (module+ main
   (define-logger foo)
   (define-logger bar)
 
+  (log-foo-debug "STARTING THE TEST RUN")
   (define (on-complete op . args)
     (log-foo-debug "in on-complete")
     (apply op args))
 
 
-  (displayln "For the following tests, output is sent to (current-logger) at default
-level (i.e. 'debug).  This means you won't see any output unless you're running with, e.g. PLTSTDERR='debug', in which case you'll get debug output from the GC system and other racket internals\n")
+  (displayln "For the following tests, output is sent to (current-logger) at default level (i.e. 'debug).  This means you won't see any output unless you're running with, e.g. PLTSTDERR='debug', in which case you'll get debug output from the GC system and other racket internals\n")
+
+  (in/out-logged
+   ("show-results 1 value, verifying single execution only" #:to foo-logger)
+   ((λ ()
+      (displayln "testing for multiple eval")
+      'x)))
+
+  (in/out-logged
+   ("show-results 1 value, #:results (x) before #:to" #:results (x) #:to foo-logger )
+   'x)
+
+  (in/out-logged
+   ("show-results 2 vals" #:to foo-logger #:results (x y))
+   (values 'x 'y))
 
   (displayln "return literal")
   (in/out-logged ("literal") 'ok)
@@ -87,8 +124,8 @@ in the 'entering' message")
 
   (displayln "\ndefault format style")
   (in/out-logged ("on-complete" #:at 'debug #:to foo-logger
-                  "time" (current-seconds)
-                  "thread-id" 17)
+                                "time" (current-seconds)
+                                "thread-id" 17)
                  (on-complete + 1 2 3))
 
   (displayln "\nsame as above, reversed order of keywords")
@@ -105,6 +142,7 @@ in the 'entering' message")
   (displayln "\n\nTesting multiple value return")
 
   (in/out-logged ("values"
-                  #:at 'error
+                  #:at 'debug
                   #:with "time is: ~a, username is: ~a." (current-inexact-milliseconds) 'bob)
-                 (values 1 2)))
+                 (values 1 2))
+  ) ; module
