@@ -15,7 +15,7 @@
     (pattern (~seq (~peek (~not x:keyword)) val)))
 
   (syntax-parse stx
-    [(_ (func-name:str (~alt (~optional (~seq #:to logger:expr))
+    [(_ (func-name:expr (~alt (~optional (~seq #:to logger:expr))
                              (~optional (~seq #:at level))
                              (~optional (~seq #:with fstr:str))
                              (~optional (~seq #:results (r1 result-names ...)))) ; 1+ names
