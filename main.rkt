@@ -49,11 +49,11 @@
          (~? (let ()
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format format-str "entering" func-name "" arg-str))
+                            (string-trim (format format-str "entering" func-name "" arg-str)))
                (define-values (r1 result-names ...) (let () code ...))
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
-                            (format format-str
+                            (string-trim (format format-str
                                     "leaving"
                                     func-name
                                     (~?
@@ -62,7 +62,7 @@
                                             (for/list ([item (list r1 result-names ...)])
                                               (~v item))))
                                      "")
-                                    arg-str))
+                                                 arg-str)))
                (values r1 result-names ...))
 
 
