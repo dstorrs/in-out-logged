@@ -16,14 +16,14 @@
 
   (syntax-parse stx
     [(_ (func-name:expr (~alt (~optional (~seq #:to logger:expr))
-                             (~optional (~seq #:at level))
-                             (~optional (~seq #:with fstr:str))
-                             (~optional (~seq #:results (r1 result-names ...)))) ; 1+ names
-                       ...
-                       data:non-kw-argument ...)
+                              (~optional (~seq #:at level))
+                              (~optional (~seq #:with fstr:str))
+                              (~optional (~seq #:results (r1 result-names ...)))) ; 1+ names
+                        ...
+                        data:non-kw-argument ...)
         code:expr ...)
      #'(let* ([lst  (list data.val ...)]
-              [format-str "~a ~a. ~a~a"] ; entering/leaving, func-name, results, args
+              [format-str "~a ~a.~a~a"] ; entering/leaving, func-name, results, args
               [arg-str (~? (apply (curry format fstr) lst)
                            (let* ([item lst]
                                   [len  (length lst)])
@@ -54,14 +54,14 @@
                (log-message (~? logger (current-logger))
                             (~? level 'debug)
                             (string-trim (format format-str
-                                    "leaving"
-                                    func-name
-                                    (~?
-                                     (string-join
-                                      (cons "results: "
-                                            (for/list ([item (list r1 result-names ...)])
-                                              (~v item))))
-                                     "")
+                                                 "leaving"
+                                                 func-name
+                                                 (~?
+                                                  (string-join
+                                                   (cons "results: "
+                                                         (for/list ([item (list r1 result-names ...)])
+                                                           (~v item))))
+                                                  "")
                                                  arg-str)))
                (values r1 result-names ...))
 

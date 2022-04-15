@@ -9,4 +9,4 @@
 
 (define test-omit-paths '("test.rkt"))
 
-(define version "0.3")
+(define version "0.4")
