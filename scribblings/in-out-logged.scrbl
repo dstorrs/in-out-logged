@@ -45,13 +45,15 @@ format into it.
         (make-evaluator 'racket)))))
 
 @racketblock[
- (in/out-logged (#:to <logger-name>
+(in/out-logged ("label"
+                 #:to <logger-name>
                  #:at <logger-level>
                  #:results (id ...+)
                  <key/value pair> ...)
     code ...)
 
- (in/out-logged (#:to <logger-name>
+(in/out-logged ("label"
+	         #:to <logger-name>
                  #:at <logger-level>
                  #:results (id ...+)
                  #:with <format-str> <value> ...)
@@ -103,7 +105,7 @@ foo: entering on-complete at 'info level.
 message from inside on-complete
 foo: leaving on-complete at 'info level. 
 
- (code:comment "order of keywords doesn't matter")
+ (code:comment "as always in Racket, order of keywords doesn't matter")
  > (in/out-logged ("on-complete, vary keyword order" #:at 'debug #:to foo-logger )
                   (on-complete + 1 2 3))
 foo: entering on-complete, vary keyword order.
